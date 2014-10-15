@@ -15,7 +15,7 @@ if ($ARGV[0]) {
 }
 chomp $flags;
 
-my $binflags = sprintf("%b", hex($flags));
+my $binflags = sprintf("%064b", hex($flags));
 my @digits = split("", $binflags);
 
 @digits = reverse(@digits);
@@ -63,6 +63,7 @@ for my $digit (@digits) {
 
 $ii = 0;
 @digits = reverse(@digits);
+
 for my $digit (@digits) {
     if ($digit) {
         switch ($ii) {
