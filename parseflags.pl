@@ -5,9 +5,37 @@ use warnings;
 no warnings 'portable';
 
 use Switch;
+use Cwd;
+use Shell qw(uname);
+my $uname = uname('-r');
+print $uname;
+
+my %configparams = ("CONFIG_PAGEFLAGS_EXTENDED" => "y",
+                    "CONFIG_MMU" => "y" ,
+                    "CONFIG_ARCH_USES_PG_UNCACHED" => "y",
+                    "CONFIG_MEMORY_FAILURE" => "y",
+                    "CONFIG_TRANSPARENT_HUGEPAGE" => "y");
+
 
 my $CONFIG_PAGEFLAGS_EXTENDED = "y";
 my $CONFIG_MMU = "y";
+
+my $cwd = getcwd;
+
+if (open FILE, "<", "$cwd/.config") {
+    for my $configs (keys %configparams) {
+        $configs = qr/$configs/;
+        while (my $line = <FILE>) {
+            if ($line =~ /$configs/) {
+                if (substr($line, 0, 1) eq '#') {
+                    $configparams{$configs} = "n";
+                }
+            }
+        }
+    }
+} elsif (open FILE, "<", "/boot/config-$uname") {
+    #read file
+} 
 
 my $flags;
 if ($ARGV[0]) {
@@ -16,7 +44,9 @@ if ($ARGV[0]) {
     print "Enter flags to parse: ";
     $flags = <STDIN>;
 }
+
 chomp $flags;
+
 while ($flags ne "") {
     my $binflags = sprintf("%064b", hex($flags));
     my @digits = split("", $binflags);
@@ -117,4 +147,31 @@ while ($flags ne "") {
     print "Enter flags to parse: ";
     $flags = <STDIN>;
     chomp $flags;
+}
+
+sub parseconfig {
+    my $ret;
+    foreach my $l (@_) {
+        
+        if ($l =~ /CONFIG_PAGEFLAGS_EXTENDED/) {
+            if ($l =~ /y/) {
+                $ret = 'y';
+            } else {
+                $ret = 'n';
+            }
+        } elsif ( $l =~ /CONFIG_HAVE_MLOCKED_PAGE_BIT/) {
+            if ($l =~ /y/) {
+                $ret = 'y';
+            } else {
+                $ret = 'n';
+            }
+        } elsif ($l =~ /CONFIG_IA64_UNCACHED_ALLOCATOR/) {
+            if ($l =~ /y/) {
+                $ret = 'y';
+            } else { 
+                $ret = 'n';
+            }
+        }
+    }
+    return $ret;
 }
